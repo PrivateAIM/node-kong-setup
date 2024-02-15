@@ -69,10 +69,10 @@ The `kong.yaml` file defines the clients allowed to access the Admin API. Each c
 COMPOSE_PROFILES=database docker-compose up -d
 ```
 
-3. Next run the following command to start the Kong Gateway:
+3. Next run the following command to restart the Kong Gateway:
 
 ```bash
-docker-compose up -d
+docker-compose restart
 ```
 
 ## Links

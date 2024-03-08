@@ -1,0 +1,107 @@
+# This file contains sample configuration values for deploying Kong using Helm.
+# https://github.com/PrivateAIM/kong-charts
+
+image:
+  repository: kong
+  tag: "3.6"
+
+env:
+  prefix: /kong_prefix/
+  database: postgres
+  # The default values for admin_listen include both ipv4 and ipv6 - if cluster does not support ipv6, it should be defined (minikube does not support ipv6)
+  admin_listen: "127.0.0.1:8001"
+
+admin:
+  enabled: false
+  http:
+    enabled: true
+  tls:
+    enabled: false
+
+manager:
+  enabled: false
+
+portal:
+  enabled: false
+
+portalapi:
+  enabled: false
+
+proxy:
+  enabled: true
+  ingress:
+    enabled: true
+    hostname: kong.flame.node
+
+ingressController:
+  enabled: false
+
+initialConfiguration:
+  enabled: true
+  config: |
+    _format_version: "3.0"
+    _transform: true
+
+    services:
+      - name: kong-admin-service
+        url: http://127.0.0.1:8001  # The URL for the Kong admin service
+        routes:
+          - name: kong-admin-route
+            paths:
+              - /admin-api  # The paths for the Kong admin API
+            methods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+              - HEAD
+            plugins:
+              - name: acl
+                instance_name: kong-admin-acl
+                config:
+                  allow:
+                    - kong-admin-group  # The allowed groups for the Kong admin API
+                  hide_groups_header: true
+                protocols:
+                  - http
+                  - https
+              - name: jwt
+                instance_name: kong-admin-jwt
+                config:
+                  claims_to_verify:
+                    - exp
+                  key_claim_name: client_id
+                  secret_is_base64: false
+                  uri_param_names: []
+                protocols:
+                  - http
+                  - https
+
+    consumers:
+      - username: pod-orchestrator-client
+        acls:
+          - group: kong-admin-group  # The ACL group for the consumer
+        jwt_secrets:
+          - key: pod-orchestrator-client
+            algorithm: RS256
+            rsa_public_key: |
+              -----BEGIN PUBLIC KEY-----
+              MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoI9gEGu/AKRx5slQCh1o
+              gnKIao4HCE1giJqpODyyRHJMeYrn3B1x8sEwF0QY7e/aMeHMrvEza7KxftzkV4X/
+              6wofSl90Q0bRUN73c/nXjNitxStQTYJ6mCzu+j5fiKbI+Dqu9bjlAcUFE0GcddGC
+              twsjCjq8sbHggplMXQsGWn13yxLQrFKMJ8v6HJHj3cPPBbBNH+ZeQ2QgNVbZOPad
+              yzNUhAFuzJU/tzlpWQpl7gA3BnZq+gq1w9OB1k3QlZFH9V4GPePn8omzHX38W3jl
+              LVZzqtiT3Z2ikOHFvi8hS3p9z9/jPVc/GaZxM2wQdo1vpowYQe3tdKCki57woRZy
+              iwIDAQAB
+              -----END PUBLIC KEY-----
+
+# Sub-chart
+postgresql:
+  enabled: true
+  auth:
+    username: kong
+    database: kong
+    password: kong
+    postgresPassword: gqKvPbLCmG  # The password for the PostgreSQL database
